@@ -1,0 +1,119 @@
+---
+title: "hw5lab5 2nd"
+author: "Chan, Kim Fai"
+date: "10/24/2021"
+output: html_document
+---
+
+
+```{r}
+setwd("~/Desktop/jeff's documents/Master of Economics in CCNY/ECONOMETRICS ECO B2000/homework 5 lab 5")
+load("acs2017_ny_data.RData")
+attach(acs2017_ny)
+use_varb <- (AGE >= 25) & (AGE <= 65) & (LABFORCE == 2) & (WKSWORK2 > 4) & (UHRSWORK >= 35) & (Asian == 1)
+dat_use <- subset(acs2017_ny,use_varb) # 
+detach()
+attach(dat_use)
+
+#First, I do the nonlinear regression between wage and age as well as age-squared.
+
+lm1<-lm(INCWAGE~AGE+I(AGE^2),data=dat_use)
+par(mfrow=c(2,2))
+plot(lm1,col="grey",pch=16,cex=1,lwd=1,lty=2)
+summary(lm1)
+
+
+require(stargazer)
+stargazer(lm1, type = "text")
+
+require(AER)
+
+
+NNobs <- length(INCWAGE)
+set.seed(12345) 
+graph_obs <- (runif(NNobs) < 0.1) 
+dat_graph <-subset(dat_use,graph_obs) 
+a<-plot(INCWAGE ~ jitter(AGE, factor = 2), pch = 16, col = rgb(0.5, 0.7, 0.8, alpha = 0.8), ylim = c(0,150000), data = dat_graph)
+summary(a)
+
+
+to_be_predicted1 <- data.frame(AGE = 25:65, female = 1, AfAm = 0, Asian = 1, Amindian = 0, race_oth = 0, Hispanic =0, educ_hs = 0, educ_somecoll = 0, educ_college = 1, educ_advdeg = 0)
+to_be_predicted1$yhat <- predict(lm1, newdata = to_be_predicted1)
+lines(yhat ~ AGE, data = to_be_predicted1)
+
+
+#the p-value of AGE and AGE^2 are both less than 0.01 at confidence level, so I assume that they are significant. the conclusion is: one female Asian person who has a college degree, she can get the peak income at around 87k when she is around 41.4 years old.
+
+
+lm2<-lm(INCWAGE~AGE+I(AGE^2)+I(AGE^3)+I(AGE^4),data=dat_use)
+summary(lm2)
+
+NNobs <- length(INCWAGE)
+set.seed(22222) 
+graph_obs <- (runif(NNobs) < 0.1) 
+dat_graph <-subset(dat_use,graph_obs) 
+b<-plot(INCWAGE ~ jitter(AGE, factor = 2), pch = 16, col = rgb(0.5, 0.7, 0.8, alpha = 0.8), ylim = c(0,150000), data = dat_graph)
+to_be_predicted2 <- data.frame(AGE = 25:65, female = 1, AfAm = 0, Asian = 1, Amindian = 0, race_oth = 0, Hispanic =0, educ_hs = 0, educ_somecoll = 0, educ_college = 1, educ_advdeg = 0)
+to_be_predicted2$yhat <- predict(lm2, newdata = to_be_predicted2)
+lines(yhat ~ AGE, data = to_be_predicted2)
+
+#polynomials of age, at (Age^3) and (Age^4), which I do a hypothesis test, we can see that all of the p-value are less than 0.01,those higher-order polynomial terms are significant as well.
+
+
+lm3<-lm(INCWAGE~log(AGE)+I(log(AGE^2)),data=dat_use)
+summary(lm3)
+
+
+#when I do log(AGE^2) to make regression, I get NA, for p-value, they are not significant, it changes the significant level. The reason I guess is: I get a perfect multicolinearity when I put log(AGE^2) with log(AGE), so it is useless.
+
+lm4<-lm(INCWAGE~AGE+I(AGE^2)+educ_college+educ_advdeg,data=dat_use)
+summary(lm4)
+
+NNobs <- length(INCWAGE)
+set.seed(33333) 
+graph_obs <- (runif(NNobs) < 0.1) 
+dat_graph <-subset(dat_use,graph_obs) 
+b<-plot(INCWAGE ~ jitter(AGE, factor = 2), pch = 16, col = rgb(0.5, 0.7, 0.8, alpha = 0.8), ylim = c(0,150000), data = dat_graph)
+to_be_predicted3 <- data.frame(AGE = 25:65, female = 1, AfAm = 0, Asian = 1, Amindian = 0, race_oth = 0, Hispanic =0, educ_hs = 0, educ_somecoll = 0, educ_college = 1, educ_advdeg = 0)
+to_be_predicted3$yhat <- predict(lm4, newdata = to_be_predicted3)
+lines(yhat ~ AGE, data = to_be_predicted3)
+
+
+#The interpretation of coefficient on educ_college in above subset: keep the other variables constant, when a female get a college degree, her income will increase by around 49k. So I choose dummy variables in my regression,educ_hs;educ_somecoll;duc_college and educ_advdeg, the reason why i didn't add educ_nohs variable is: if i add it, there has a Dummy Variable Trap.
+
+
+lm5<-lm(INCWAGE~AGE+I(AGE^2)+educ_hs+educ_somecoll+educ_college+educ_advdeg,data=dat_use)
+summary(lm5)
+
+NNobs <- length(INCWAGE)
+set.seed(44444) 
+graph_obs <- (runif(NNobs) < 0.1) 
+dat_graph <-subset(dat_use,graph_obs) 
+b<-plot(INCWAGE ~ jitter(AGE, factor = 2), pch = 16, col = rgb(0.5, 0.7, 0.8, alpha = 0.8), ylim = c(0,150000), data = dat_graph)
+to_be_predicted4 <- data.frame(AGE = 25:65, female = 1, AfAm = 0, Asian = 1, Amindian = 0, race_oth = 0, Hispanic =0, educ_hs = 0, educ_somecoll = 0, educ_college = 0, educ_advdeg = 1)
+to_be_predicted4$yhat <- predict(lm5, newdata = to_be_predicted4)
+lines(yhat ~AGE , data = to_be_predicted4)
+
+#The result: high school degree is not significantly with the income wage, because the p value is 0.151 greater than 0.01, except the high school degree, other variables are all significantly on the confidence level. we could get positive relationship between the degree with income, especially People with higher education level tend to have higher incomes, and a master’s or bachelor’s degree make people earn more money.if you get college degree, your income will increase by around 60k, and if you get advance degree, your income will increase even more to around 89k.
+
+
+
+
+lm6<-lm(INCWAGE ~ AGE + I(AGE^2) + female + I(female*AGE) + I(female*(AGE^2))+educ_somecoll+educ_college+educ_advdeg,data=dat_use)
+NNobs <- length(INCWAGE)
+set.seed(66666) 
+graph_obs <- (runif(NNobs) < 0.1) 
+dat_graph <-subset(dat_use,graph_obs) 
+plot(INCWAGE ~ jitter(AGE, factor = 2), pch = 16, col = rgb(0.5, 0.7, 0.8, alpha = 0.8), ylim = c(0,150000), data = dat_graph)
+to_be_predicted6 <- data.frame(AGE = 25:65, female = 1, AfAm = 0, Asian =1, Amindian = 0, race_oth = 0, Hispanic =0, educ_hs = 0, educ_somecoll = 0, educ_college = 1, educ_advdeg = 0)
+to_be_predicted6$yhat <- predict(lm6, newdata = to_be_predicted6)
+lines(yhat ~ AGE, data = to_be_predicted6,col="red",lwd=2)
+to_be_predicted7 <- data.frame(AGE = 25:65, female = 0, AfAm = 0, Asian =1, Amindian = 0, race_oth = 0, Hispanic =0, educ_hs = 0, educ_somecoll = 0, educ_college = 1, educ_advdeg = 0)
+to_be_predicted7$yhat <- predict(lm6, newdata = to_be_predicted7)
+lines(yhat ~ AGE, data = to_be_predicted7,col="blue",lty=3,lwd=4)
+legend("topleft", c("male", "female"), lty = c(2,1), bty = "n")
+
+
+#we can see that there is a gap between female and male, men’s wage are higher than women’s wage.
+```
+detach()
